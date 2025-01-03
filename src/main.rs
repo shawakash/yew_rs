@@ -1,4 +1,18 @@
 use yew::prelude::*;
+use yew_router::prelude::*;
+
+#[derive(Clone, Routable, PartialEq)]
+enum Route {
+    #[at("/")]
+    Home,
+    #[at("/counter")]
+    Counter,
+    #[at("/about")]
+    About,
+    #[not_found]
+    #[at("/404")]
+    NotFound,
+}
 
 #[function_component]
 fn Counter() -> Html {
@@ -52,14 +66,70 @@ fn Hero() -> Html {
 }
 
 #[function_component]
-fn App() -> Html {
+fn About() -> Html {
     html! {
-        <main class="min-h-screen bg-[#fafaf7] flex items-center justify-center">
+        <div class="text-center">
+            <h1 class="text-4xl font-bold, text-gray-800 mb-2">{"About"}</h1>
+            <p class="text-gray-600">{"This is the about page"}</p>
+        </div>
+    }
+}
+
+#[function_component]
+fn Nav() -> Html {
+    html! {
+        <nav class="mb-8">
+            <ul class="flex space-x-4 justify-center">
+                <li>
+                    <Link<Route> to={Route::Home} classes="text-blue-600 hover:text-blue-800">
+                        { "Home" }
+                    </Link<Route>>
+                </li>
+                <li>
+                    <Link<Route> to={Route::Counter} classes="text-blue-600 hover:text-blue-800">
+                        { "Counter" }
+                    </Link<Route>>
+                </li>
+                <li>
+                    <Link<Route> to={Route::About} classes="text-blue-600 hover:text-blue-800">
+                        { "About" }
+                    </Link<Route>>
+                </li>
+            </ul>
+        </nav>
+    }
+}
+
+fn switch(routes: Route) -> Html {
+    match routes {
+        Route::Home => html! {
             <div class="max-w-md w-full mx-auto p-8 space-y-8">
                 <Hero />
+            </div>
+        },
+        Route::Counter => html! {
+            <div class="max-w-md w-full mx-auto p-8 space-y-8">
                 <Counter />
             </div>
-        </main>
+        },
+        Route::About => html! {
+            <div class="max-w-md w-full mx-auto p-8 space-y-8">
+                <About />
+            </div>
+        },
+        Route::NotFound => html! { <h1>{ "404" }</h1> },
+    }
+}
+
+#[function_component]
+fn App() -> Html {
+    html! {
+        <BrowserRouter>
+            <main class="min-h-screen bg-[#fafaf7]">
+                <Nav />
+                <Switch<Route> render={switch} />
+            </main>
+        </BrowserRouter>
     }
 }
 
