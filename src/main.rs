@@ -9,9 +9,28 @@ enum Route {
     Counter,
     #[at("/about")]
     About,
+    #[at("/:name")]
+    Name { name: String },
     #[not_found]
     #[at("/404")]
     NotFound,
+}
+
+#[function_component]
+fn SlugPage() -> Html {
+    let location = use_location().unwrap();
+    let name = location.path().trim_start_matches("/").to_string();
+
+    html! {
+        <div class="text-center">
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">
+                {format!("Dynamic Page: {}", name)}
+            </h1>
+            <p class="text-gray-600">
+                {format!("This is a dynamic page with slug: {}", name)}
+            </p>
+        </div>
+    }
 }
 
 #[function_component]
@@ -95,6 +114,11 @@ fn Nav() -> Html {
                         { "About" }
                     </Link<Route>>
                 </li>
+                <li>
+                    <Link<Route> to={Route::Name { name: "example".to_string() }} classes="text-blue-600 hover:text-blue-800">
+                        { "Example Slug" }
+                    </Link<Route>>
+                </li>
             </ul>
         </nav>
     }
@@ -117,7 +141,14 @@ fn switch(routes: Route) -> Html {
                 <About />
             </div>
         },
-        Route::NotFound => html! { <h1>{ "404" }</h1> },
+        Route::Name { name } => html! {
+            <div class="max-w-md w-full mx-auto p-8 space-y-8">
+                <SlugPage />
+            </div>
+        },
+        Route::NotFound => {
+            html! { <h1 class="text-center text-lg text-slate-900 ">{ "Upps! This page sweeped over our imagination." }</h1> }
+        }
     }
 }
 
