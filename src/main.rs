@@ -1,5 +1,8 @@
+use utils::{format_volume, get_price_change_class, get_ticker_data};
 use yew::prelude::*;
 use yew_router::prelude::*;
+
+mod utils;
 
 #[derive(Clone, Routable, PartialEq)]
 enum Route {
@@ -11,6 +14,8 @@ enum Route {
     About,
     #[at("/:name")]
     Name { name: String },
+    #[at("/ticker")]
+    TickerPage,
     #[not_found]
     #[at("/404")]
     NotFound,
@@ -115,12 +120,96 @@ fn Nav() -> Html {
                     </Link<Route>>
                 </li>
                 <li>
+                    <Link<Route> to={Route::TickerPage} classes="text-blue-600 hover:text-blue-800">
+                        { "Crypto Ticker" }
+                    </Link<Route>>
+                </li>
+                <li>
                     <Link<Route> to={Route::Name { name: "example".to_string() }} classes="text-blue-600 hover:text-blue-800">
                         { "Example Slug" }
                     </Link<Route>>
                 </li>
             </ul>
         </nav>
+    }
+}
+
+#[function_component]
+fn Ticker_Page() -> Html {
+    let tickers = use_state(|| Vec::new());
+    let error = use_state(|| None);
+    let loading = use_state(|| true);
+
+    {
+        let tickers = tickers.clone();
+        let error = error.clone();
+        let loading = loading.clone();
+
+        use_effect_with((), move |_| {
+            wasm_bindgen_futures::spawn_local(async move {
+                loading.set(true);
+                match get_ticker_data().await {
+                    Ok(data) => {
+                        tickers.set(data);
+                        error.set(None);
+                    }
+                    Err(err) => error.set(Some(err.to_string())),
+                }
+                loading.set(false);
+            });
+            || ()
+        });
+    }
+
+    html! {
+        <div class="min-h-screen p-8">
+            <h1 class="text-4xl font-bold mb-8 text-center">{"Crypto Market Watch"}</h1>
+
+            if *loading {
+                <div class="flex justify-center">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+                </div>
+            } else if let Some(err) = &*error {
+                <div class="text-red-500 text-center">
+                    {format!("Error: {}", err)}
+                </div>
+            } else {
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {
+                        (*tickers).iter().map(|ticker| {
+                            html! {
+                                <div class="border border-gray-400 rounded-lg p-6 shadow-lg hover:shadow-xl transition-shadow">
+                                    <div class="flex justify-between items-center mb-4">
+                                        <h2 class="text-xl font-bold">{&ticker.symbol}</h2>
+                                        <span class={get_price_change_class(&ticker.price_change_percent)}>
+                                            {format!("{}%", ticker.price_change_percent)}
+                                        </span>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-400">{"Price:"}</span>
+                                            <span class="font-medium">{format!("${}", ticker.last_price)}</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-400">{"24h High:"}</span>
+                                            <span class="font-medium">{format!("${}", ticker.high_price)}</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-400">{"24h Low:"}</span>
+                                            <span class="font-medium">{format!("${}", ticker.low_price)}</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-400">{"Volume:"}</span>
+                                            <span class="font-medium">{format_volume(&ticker.volume)}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        }).collect::<Html>()
+                    }
+                </div>
+            }
+        </div>
     }
 }
 
@@ -145,6 +234,9 @@ fn switch(routes: Route) -> Html {
             <div class="max-w-md w-full mx-auto p-8 space-y-8">
                 <SlugPage />
             </div>
+        },
+        Route::TickerPage => html! {
+            <Ticker_Page />
         },
         Route::NotFound => {
             html! { <h1 class="text-center text-lg text-slate-900 ">{ "Upps! This page sweeped over our imagination." }</h1> }
