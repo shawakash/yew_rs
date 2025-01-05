@@ -25,8 +25,8 @@ pub async fn get_ticker_data() -> Result<Vec<TickerData>, gloo_net::Error> {
 
     Ok(response
         .into_iter()
-        .filter(|ticker| ticker.symbol.ends_with(("USDT")))
-        .take(12)
+        .filter(|ticker| (ticker.symbol.ends_with("USDC") || ticker.symbol.ends_with("USDT")))
+        .take(200)
         .collect())
 }
 
@@ -55,5 +55,13 @@ pub fn format_volume(volume: &str) -> String {
         }
     } else {
         volume.to_string()
+    }
+}
+
+pub fn format_number(number: &str) -> String {
+    if let Ok(num) = number.parse::<f64>() {
+        format!("{:.2}", num)
+    } else {
+        number.to_string()
     }
 }

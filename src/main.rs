@@ -1,4 +1,4 @@
-use utils::{format_volume, get_price_change_class, get_ticker_data};
+use utils::{format_number, format_volume, get_price_change_class, get_ticker_data};
 use yew::prelude::*;
 use yew_router::prelude::*;
 
@@ -188,15 +188,15 @@ fn Ticker_Page() -> Html {
                                     <div class="space-y-2">
                                         <div class="flex justify-between">
                                             <span class="text-gray-400">{"Price:"}</span>
-                                            <span class="font-medium">{format!("${}", ticker.last_price)}</span>
+                                            <span class="font-medium">{"$ "}{format_number(&ticker.last_price)}</span>
                                         </div>
                                         <div class="flex justify-between">
                                             <span class="text-gray-400">{"24h High:"}</span>
-                                            <span class="font-medium">{format!("${}", ticker.high_price)}</span>
+                                            <span class="font-medium">{"$ "}{format_number(&ticker.high_price)}</span>
                                         </div>
                                         <div class="flex justify-between">
                                             <span class="text-gray-400">{"24h Low:"}</span>
-                                            <span class="font-medium">{format!("${}", ticker.low_price)}</span>
+                                            <span class="font-medium">{"$ "}{format_number(&ticker.low_price)}</span>
                                         </div>
                                         <div class="flex justify-between">
                                             <span class="text-gray-400">{"Volume:"}</span>
