@@ -1,4 +1,4 @@
-use components::{About, Counter, Hero, Nav, SlugPage, Ticker_Page};
+use components::{About, Counter, Hero, Nav, SlugPage, Ticker, Ticker_Page};
 use yew::prelude::*;
 use yew_router::prelude::*;
 
@@ -17,6 +17,8 @@ pub enum Route {
     Name { name: String },
     #[at("/ticker")]
     TickerPage,
+    #[at("/ticker/:symbol")]
+    Ticker { symbol: String },
     #[not_found]
     #[at("/404")]
     NotFound,
@@ -47,6 +49,9 @@ fn switch(routes: Route) -> Html {
         Route::TickerPage => html! {
             <Ticker_Page />
         },
+        Route::Ticker { symbol } => html! {
+            <Ticker symbol={symbol} />
+        },
         Route::NotFound => {
             html! { <h1 class="text-center text-lg text-slate-900 ">{ "Upps! This page sweeped over our imagination." }</h1> }
         }
@@ -66,5 +71,6 @@ fn App() -> Html {
 }
 
 fn main() {
+    wasm_logger::init(wasm_logger::Config::default());
     yew::Renderer::<App>::new().render();
 }

@@ -1,5 +1,9 @@
-use crate::utils::{format_number, format_volume, get_price_change_class, get_ticker_data};
+use crate::utils::{
+    format_number, format_volume, get_all_tickers, get_price_change_class, get_single_ticker,
+};
 use crate::Route;
+use log;
+use web_sys::InputEvent;
 use yew::prelude::*;
 use yew_router::prelude::*;
 
@@ -130,7 +134,7 @@ pub fn Ticker_Page() -> Html {
         use_effect_with((), move |_| {
             wasm_bindgen_futures::spawn_local(async move {
                 loading.set(true);
-                match get_ticker_data().await {
+                match get_all_tickers().await {
                     Ok(data) => {
                         tickers.set(data);
                         error.set(None);
@@ -192,5 +196,91 @@ pub fn Ticker_Page() -> Html {
                 </div>
             }
         </div>
+    }
+}
+
+#[derive(Properties, PartialEq)]
+pub struct TickerProps {
+    pub symbol: String,
+    #[prop_or_default]
+    pub onclick: Option<Callback<()>>,
+}
+
+#[function_component]
+pub fn Ticker(props: &TickerProps) -> Html {
+    let ticker = use_state(|| None);
+    let error = use_state(|| None);
+    let loading = use_state(|| true);
+
+    {
+        let ticker = ticker.clone();
+        let error = error.clone();
+        let loading = loading.clone();
+        let symbol = props.symbol.clone();
+
+        use_effect_with(props.symbol.clone(), move |_| {
+            wasm_bindgen_futures::spawn_local(async move {
+                loading.set(true);
+                match get_single_ticker(&symbol).await {
+                    Ok(data) => {
+                        ticker.set(Some(data));
+                        error.set(None);
+                    }
+                    Err(err) => error.set(Some(err.to_string())),
+                }
+                loading.set(false);
+            });
+
+            || ()
+        });
+    }
+
+    let onclick = props.onclick.clone();
+    let onclick = Callback::from(move |_| {
+        if let Some(callback) = &onclick {
+            callback.emit(());
+        }
+    });
+
+    html! {
+        if *loading {
+            <div class="flex justify-center">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-800"></div>
+            </div>
+        } else if let Some(err) = &*error {
+            <div class="text-red-500 text-center p-4 bg-red-100 rounded-lg">
+                {format!("Error loading {}: {}", props.symbol, err)}
+            </div>
+        } else if let Some(ticker_data) = &*ticker {
+            <div
+                onclick={onclick}
+                class="border border-gray-400 rounded-lg p-6 shadow-lg hover:shadow-xl transition-shadow cursor-pointer"
+            >
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold">{&ticker_data.symbol}</h2>
+                    <span class={get_price_change_class(&ticker_data.price_change_percent)}>
+                        {format!("{}%", ticker_data.price_change_percent)}
+                    </span>
+                </div>
+                <div class="space-y-2">
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">{"Price:"}</span>
+                        <span class="font-medium">{"$ "}{format_number(&ticker_data.last_price)}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">{"24h High:"}</span>
+                        <span class="font-medium">{"$ "}{format_number(&ticker_data.high_price)}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">{"24h Low:"}</span>
+                        <span class="font-medium">{"$ "}{format_number(&ticker_data.low_price)}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">{"Volume:"}</span>
+                        <span class="font-medium">{format_volume(&ticker_data.volume)}</span>
+                    </div>
+                </div>
+            </div>
+        }
     }
 }

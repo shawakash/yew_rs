@@ -16,18 +16,40 @@ pub struct TickerData {
     pub low_price: String,
 }
 
-pub async fn get_ticker_data() -> Result<Vec<TickerData>, gloo_net::Error> {
+pub async fn get_all_tickers() -> Result<Vec<TickerData>, gloo_net::Error> {
     let response = Request::get("https://api.binance.com/api/v3/ticker/24hr")
         .send()
         .await?
         .json::<Vec<TickerData>>()
         .await?;
 
-    Ok(response
+    let mut filtered: Vec<TickerData> = response
         .into_iter()
-        .filter(|ticker| (ticker.symbol.ends_with("USDC") || ticker.symbol.ends_with("USDT")))
-        .take(200)
-        .collect())
+        .filter(|ticker| ticker.symbol.ends_with("USDC") || ticker.symbol.ends_with("USDT"))
+        .collect();
+
+    filtered.sort_by(|a, b| {
+        let vol_a = a.volume.parse::<f64>().unwrap_or(0.0);
+        let vol_b = b.volume.parse::<f64>().unwrap_or(0.0);
+        vol_b
+            .partial_cmp(&vol_a)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
+
+    Ok(filtered.into_iter().take(200).collect())
+}
+
+pub async fn get_single_ticker(symbol: &str) -> Result<TickerData, gloo_net::Error> {
+    let response = Request::get(&format!(
+        "https://api.binance.com/api/v3/ticker/24hr?symbol={}",
+        symbol
+    ))
+    .send()
+    .await?
+    .json::<TickerData>()
+    .await?;
+
+    Ok(response)
 }
 
 pub fn get_price_change_class(price_change: &str) -> &'static str {
