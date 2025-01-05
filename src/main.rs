@@ -1,8 +1,12 @@
+use components::{About, Counter, Hero, Nav, SlugPage, Ticker, Ticker_Page};
 use yew::prelude::*;
 use yew_router::prelude::*;
 
+mod components;
+mod utils;
+
 #[derive(Clone, Routable, PartialEq)]
-enum Route {
+pub enum Route {
     #[at("/")]
     Home,
     #[at("/counter")]
@@ -11,117 +15,13 @@ enum Route {
     About,
     #[at("/:name")]
     Name { name: String },
+    #[at("/ticker")]
+    TickerPage,
+    #[at("/ticker/:symbol")]
+    Ticker { symbol: String },
     #[not_found]
     #[at("/404")]
     NotFound,
-}
-
-#[function_component]
-fn SlugPage() -> Html {
-    let location = use_location().unwrap();
-    let name = location.path().trim_start_matches("/").to_string();
-
-    html! {
-        <div class="text-center">
-            <h1 class="text-4xl font-bold text-gray-800 mb-2">
-                {format!("Dynamic Page: {}", name)}
-            </h1>
-            <p class="text-gray-600">
-                {format!("This is a dynamic page with slug: {}", name)}
-            </p>
-        </div>
-    }
-}
-
-#[function_component]
-fn Counter() -> Html {
-    let counter = use_state(|| 0);
-    let onclick_increment = {
-        let counter = counter.clone();
-        move |_| {
-            counter.set(*counter + 1);
-        }
-    };
-
-    let onclick_decrement = {
-        let counter = counter.clone();
-        move |_| {
-            if *counter == 0 {
-                return;
-            }
-            counter.set(*counter - 1);
-        }
-    };
-
-    html! {
-        <div class="space-y-4 w-full flex flex-col items-center">
-            <div class="flex justify-between w-3/5">
-                <button
-                    onclick={onclick_increment}
-                    class="bg-[#0551cf] text-white px-4 py-2 rounded-md hover:bg-[#0442a7] transition-colors"
-                >
-                    { "Increment" }
-                </button>
-                <button
-                    onclick={onclick_decrement}
-                    class="bg-[#0551cf] text-white px-4 py-2 rounded-md hover:bg-[#0442a7] transition-colors"
-                >
-                    { "Decrement" }
-                </button>
-            </div>
-            <p class="text-center text-2xl font-bold">{ *counter }</p>
-        </div>
-    }
-}
-
-#[function_component]
-fn Hero() -> Html {
-    html! {
-        <div class="text-center">
-            <h1 class="text-4xl font-bold text-gray-800 mb-2">{"Hello, Yew!"}</h1>
-            <p class="text-gray-600">{" This is my first application in yew! "}</p>
-        </div>
-    }
-}
-
-#[function_component]
-fn About() -> Html {
-    html! {
-        <div class="text-center">
-            <h1 class="text-4xl font-bold, text-gray-800 mb-2">{"About"}</h1>
-            <p class="text-gray-600">{"This is the about page"}</p>
-        </div>
-    }
-}
-
-#[function_component]
-fn Nav() -> Html {
-    html! {
-        <nav class="mb-8">
-            <ul class="flex space-x-4 justify-center">
-                <li>
-                    <Link<Route> to={Route::Home} classes="text-blue-600 hover:text-blue-800">
-                        { "Home" }
-                    </Link<Route>>
-                </li>
-                <li>
-                    <Link<Route> to={Route::Counter} classes="text-blue-600 hover:text-blue-800">
-                        { "Counter" }
-                    </Link<Route>>
-                </li>
-                <li>
-                    <Link<Route> to={Route::About} classes="text-blue-600 hover:text-blue-800">
-                        { "About" }
-                    </Link<Route>>
-                </li>
-                <li>
-                    <Link<Route> to={Route::Name { name: "example".to_string() }} classes="text-blue-600 hover:text-blue-800">
-                        { "Example Slug" }
-                    </Link<Route>>
-                </li>
-            </ul>
-        </nav>
-    }
 }
 
 fn switch(routes: Route) -> Html {
@@ -146,6 +46,12 @@ fn switch(routes: Route) -> Html {
                 <SlugPage />
             </div>
         },
+        Route::TickerPage => html! {
+            <Ticker_Page />
+        },
+        Route::Ticker { symbol } => html! {
+            <Ticker symbol={symbol} />
+        },
         Route::NotFound => {
             html! { <h1 class="text-center text-lg text-slate-900 ">{ "Upps! This page sweeped over our imagination." }</h1> }
         }
@@ -165,5 +71,6 @@ fn App() -> Html {
 }
 
 fn main() {
+    wasm_logger::init(wasm_logger::Config::default());
     yew::Renderer::<App>::new().render();
 }
